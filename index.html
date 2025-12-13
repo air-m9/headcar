@@ -1,0 +1,251 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.6">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="zh-CN"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;头部控车大挑战&lt;/title&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"&gt;&lt;/script&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>/* 保持 CSS 简洁，与上次版本一致 */</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { margin: 0; overflow: hidden; background-color: #333; font-family: Arial, sans-serif; touch-action: none; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>canvas { display: block; width: 100vw; height: 100vh; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#video-input { width: 0; height: 0; position: absolute; opacity: 0; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hud { padding: 20px; color: white; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 4px #000; display: flex; justify-content: space-between; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#start-screen, #game-over-screen, #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 10; pointer-events: auto; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>button { padding: 15px 40px; font-size: 20px; background-color: #ff4757; color: white; border: none; border-radius: 30px; cursor: pointer; margin-top: 20px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hidden { display: none !important; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;video id="video-input" playsinline&gt;&lt;/video&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;canvas id="game-canvas"&gt;&lt;/canvas&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="ui-layer"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="hud"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;span id="score-display"&gt;得分: 0&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;span id="time-display"&gt;时间: 60s&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="loading-screen"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2&gt;正在加载 AI 模型...&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;请允许使用摄像头。&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="start-screen" class="hidden"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1&gt;头部赛车&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;左右摆头控制赛车移动&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;撞击黄色金币得分&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button onclick="startGame()"&gt;开始游戏&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="game-over-screen" class="hidden"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1&gt;比赛结束&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2 id="final-score"&gt;最终得分: 0&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button onclick="resetGame()"&gt;再玩一次&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 确保所有函数和变量在全局范围内可用</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const canvas = document.getElementById('game-canvas');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const ctx = canvas.getContext('2d');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const videoElement = document.getElementById('video-input');</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>let width, height;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let player = { x: 0, y: 0, w: 50, h: 80, color: '#ff4757' };</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let items = [];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let score = 0;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let gameTime = 60;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let isGameRunning = false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let headX = 0.5;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let timerInterval;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let camera;<span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 1. 屏幕适配</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function resize() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>width = window.innerWidth;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>height = window.innerHeight;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>canvas.width = width;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>canvas.height = height;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>player.y = height - 120;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>player.x = width / 2 - player.w / 2;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>window.addEventListener('resize', resize);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>resize();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 2. MediaPipe AI 配置</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const faceMesh = new FaceMesh({locateFile: (file) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>faceMesh.setOptions({</p>
+<p class="p1"><span class="Apple-converted-space">            </span>maxNumFaces: 1,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>refineLandmarks: true,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>minDetectionConfidence: 0.5,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>minTrackingConfidence: 0.5</p>
+<p class="p1"><span class="Apple-converted-space">        </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>faceMesh.onResults(function onResults(results) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (results.multiFaceLandmarks &amp;&amp; results.multiFaceLandmarks.length &gt; 0) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const landmarks = results.multiFaceLandmarks[0];</p>
+<p class="p1"><span class="Apple-converted-space">                </span>headX = 1 - landmarks[1].x;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>});</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 3. 初始化函数</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function initCameraAndModel() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>camera = new Camera(videoElement, {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>onFrame: async () =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>await faceMesh.send({image: videoElement});</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>width: 640,</p>
+<p class="p1"><span class="Apple-converted-space">                </span>height: 480</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>camera.start().then(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('loading-screen').classList.add('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('start-screen').classList.remove('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}).catch(error =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>console.error("Camera startup error:", error);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('loading-screen').innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;h2&gt;启动失败！&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;p style="color:red;"&gt;请确认您是否在 **HTTPS** 链接下访问，并授予摄像头权限。&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 确保页面加载完成后执行初始化</p>
+<p class="p1"><span class="Apple-converted-space">        </span>window.onload = initCameraAndModel;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 4. 游戏逻辑函数 (保持不变)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function updateScoreUI() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('score-display').innerText = `得分: ${score}`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function startGame() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('start-screen').classList.add('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('game-over-screen').classList.add('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>score = 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>gameTime = 60;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>items = [];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>isGameRunning = true;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>updateScoreUI();</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (timerInterval) clearInterval(timerInterval);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>timerInterval = setInterval(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>gameTime--;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('time-display').innerText = `时间: ${gameTime}s`;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (gameTime &lt;= 0) gameOver();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}, 1000);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>requestAnimationFrame(gameLoop);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function gameOver() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>isGameRunning = false;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (timerInterval) clearInterval(timerInterval);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('game-over-screen').classList.remove('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('final-score').innerText = `最终得分: ${score}`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function resetGame() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>startGame();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function spawnItem() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (Math.random() &lt; 0.03) {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>items.push({</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>x: Math.random() * (width - 60) + 30,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>y: -50,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>size: 30,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>collected: false</p>
+<p class="p1"><span class="Apple-converted-space">                </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function updatePhysics() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let targetX = (headX * width) - (player.w / 2);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>player.x += (targetX - player.x) * 0.15;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>player.x = Math.max(0, Math.min(width - player.w, player.x));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>spawnItem();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; items.length; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let item = items[i];</p>
+<p class="p1"><span class="Apple-converted-space">                </span>item.y += 5;<span class="Apple-converted-space"> </span></p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>// 碰撞检测</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (!item.collected &amp;&amp;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>player.x &lt; item.x + item.size/2 &amp;&amp;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>player.x + player.w &gt; item.x - item.size/2 &amp;&amp;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>player.y &lt; item.y + item.size/2 &amp;&amp;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>player.y + player.h &gt; item.y - item.size/2) {</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>item.collected = true;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>score += 10;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>updateScoreUI();</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>items = items.filter(item =&gt; item.y &lt; height &amp;&amp; !item.collected);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function draw() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>// 绘制道路</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.fillStyle = '#555';<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.fillRect(0, 0, width, height);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// 绘制赛道线</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.strokeStyle = '#fff';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.lineWidth = 10;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.setLineDash([40, 40]);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.beginPath();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.moveTo(width / 2, 0);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.lineTo(width / 2, height);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.stroke();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// 绘制玩家</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.fillStyle = player.color;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.fillRect(player.x, player.y, player.w, player.h);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.fillStyle = '#000';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.fillRect(player.x + 5, player.y + 15, player.w - 10, 15);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// 绘制道具</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.fillStyle = 'gold';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let item of items) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>ctx.beginPath();</p>
+<p class="p1"><span class="Apple-converted-space">                </span>ctx.arc(item.x, item.y, item.size / 2, 0, Math.PI * 2);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>ctx.fill();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function gameLoop(timestamp) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (!isGameRunning) return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>updatePhysics();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>draw();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>requestAnimationFrame(gameLoop);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
